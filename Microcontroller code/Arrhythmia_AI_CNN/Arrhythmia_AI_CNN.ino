@@ -21,24 +21,24 @@
  */
 
 // Import TensorFlow stuff
-#include "TensorFlowLite.h"
-#include "tensorflow/lite/experimental/micro/kernels/micro_ops.h"  // contains operations we want to use within TensorFlow lite
-#include "tensorflow/lite/experimental/micro/micro_error_reporter.h"
-#include "tensorflow/lite/experimental/micro/micro_interpreter.h"
-#include "tensorflow/lite/experimental/micro/micro_mutable_op_resolver.h"
-#include "tensorflow/lite/version.h"
+#include "TensorFlowLite.h" // contains TensorFlow operetaions
+//#include "tensorflow/lite/experimental/micro/kernels/micro_ops.h"  // contains operations we want to use within TensorFlow lite
+//#include "tensorflow/lite/experimental/micro/micro_error_reporter.h" // debugging error
+//#include "tensorflow/lite/experimental/micro/micro_interpreter.h" // Inference engine
+#include "tensorflow/lite/experimental/micro/micro_mutable_op_resolver.h" // contains TensorFlow Lite specific operetaions
+#include "tensorflow/lite/version.h" //
 
-// Our model
+// Importing model file converted from TensorFlow
 #include "arrhythmia_c_model.h"
 
-// Figure out what's going on in our model
+// Debug flag: 1 if debugging ON else off
 #define DEBUG 1
 
 // Some settings
-constexpr int led_pin = 2;
-constexpr float pi = 3.14159265;                  // Some pi
-constexpr float freq = 0.5;                       // Frequency (Hz) of sinewave
-constexpr float period = (1 / freq) * (1000000);  // Period (microseconds)
+constexpr int PulseSensorPin = A0;
+int Signal;                // holds the incoming raw data. Signal value can range from 0-1024
+constexpr int Threshold = 550;            // Determine which Signal to "count as a beat", and which to ingore.
+
 
 // TFLite globals, used for compatibility with Arduino-style sketches
 namespace {
@@ -62,15 +62,12 @@ void setup() {
   while(!Serial);
 #endif
 
-  // Let's make an LED vary in brightness
-  pinMode(led_pin, OUTPUT);
-
   // Set up logging (will report to Serial, even within TFLite functions)
   static tflite::MicroErrorReporter micro_error_reporter;
   error_reporter = &micro_error_reporter;
 
   // Map the model into a usable data structure
-  model = tflite::GetModel(sine_model);
+  model = tflite::GetModel(arrhythmia_c_model);
   if (model->version() != TFLITE_SCHEMA_VERSION) {
     error_reporter->Report("Model version does not match Schema");
     while(1);
